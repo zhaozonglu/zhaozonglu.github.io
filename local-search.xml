@@ -4,13 +4,65 @@
   
   
   <entry>
+    <title>Redis Cluster Gossip协议</title>
+    <link href="/2023/05/31/Redis-Cluster-Gossip%E5%8D%8F%E8%AE%AE/"/>
+    <url>/2023/05/31/Redis-Cluster-Gossip%E5%8D%8F%E8%AE%AE/</url>
+    
+    <content type="html"><![CDATA[]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>redis-cluster</tag>
+      
+      <tag>Gossip协议</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>java并发编码AQS详解</title>
+    <link href="/2023/05/29/java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A0%81AQS%E8%AF%A6%E8%A7%A3/"/>
+    <url>/2023/05/29/java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A0%81AQS%E8%AF%A6%E8%A7%A3/</url>
+    
+    <content type="html"><![CDATA[<h2 id="什么是AQS"><a href="#什么是AQS" class="headerlink" title="什么是AQS"></a>什么是AQS</h2><h2 id="AQS原理"><a href="#AQS原理" class="headerlink" title="AQS原理"></a>AQS原理</h2><h2 id="AQS模板方法"><a href="#AQS模板方法" class="headerlink" title="AQS模板方法"></a>AQS模板方法</h2><h3 id="独占锁分析"><a href="#独占锁分析" class="headerlink" title="独占锁分析"></a>独占锁分析</h3><h3 id="共享锁分析"><a href="#共享锁分析" class="headerlink" title="共享锁分析"></a>共享锁分析</h3>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>java</tag>
+      
+      <tag>AQS</tag>
+      
+      <tag>reentrantLock</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>redis集群</title>
     <link href="/2023/05/26/redis%E9%9B%86%E7%BE%A4/"/>
     <url>/2023/05/26/redis%E9%9B%86%E7%BE%A4/</url>
     
-    <content type="html"><![CDATA[<h1 id="redis集群的理解"><a href="#redis集群的理解" class="headerlink" title="redis集群的理解"></a>redis集群的理解</h1><p>其实很多地方都有可能接触到集群的概念。为什么会有集群呢？简单的讲就是人多好办事，本来是一个人需要很费劲才能完成的事，现在分给十个人做，十个人都可以很轻松的完成，在海量数据，信息爆炸的今天，如果想要处理存储更多的数据，但是却没有强大到爆的大型计算机支持的话，集群是个不错的选择。</p><p>Redis中也支持集群，Redis中的集群是通过<strong>分片</strong>来进行数据共享的（其实数据库中凡是涉及到集群的，一般都会有分片或者是分区这个概念伴随着出现）。<br>我们简要来说一下，学习Redis集群，需要学习什么东西，就像是大学上课时的课前概要。</p><ul><li>既然是集群，那么肯定是要涉及到集群中的组成部分——<strong>节点</strong>，我们需要了解节点是什么？和普通的Redis服务器有什么区别？</li><li>前面说过的分片，什么是分片？把什么给分了，分给谁，既然分了，那么取的时候怎么办？</li><li>集群是很多台计算机服务器构成的，如果其中的一台宕掉了，怎么办？难道整个集群就瘫痪了吗？如何预防和处理这种集群中节点宕机的情况？这里就涉及到了复制和故障转移</li></ul><h1 id="概念说明"><a href="#概念说明" class="headerlink" title="概念说明"></a>概念说明</h1><h2 id="节点"><a href="#节点" class="headerlink" title="节点"></a>节点</h2><p>说集群肯定是要说节点的，节点构成的集群嘛，没有节点哪里有什么集群，很清楚的就可以理解到什么是节点了，<span style="color:red;">节点就是在集群模式下运行的Redis服务器</span>，集群中的节点和普通的Redis服务器相比，差别在哪里，其实也不难推测出，普通Redis服务器只是单机的服务器，老老实实的处理客户端发过来的命令，然后老老实实的返回处理结果，节点不同，除了这些之外，节点还是集群中的一部分，需要顾及到集群中用到的数据，比如，集群中其他节点的信息，和其他节点握手，判断其他节点是否下线，等等。</p><h2 id="集群模式"><a href="#集群模式" class="headerlink" title="集群模式"></a>集群模式</h2><p>集群模式其实在节点中已经引出来，说的直白点，就是服务器运行一种状态，更直白点其实就是一个配置文件中的一个标志位，<code>redis.conf</code>中有个配置项<code>cluster-enabled:yes</code>，在启动Redis服务器的时候，判断这个配置项的值是否是<code>yes</code>，如果是<code>yes</code>那么就开启服务器的集群模式，使服务器成为集群模式中的一个节点。</p><p>这里需要说明一下，成为集群模式中的一个节点，并不能成为一个集群，一个一个点，最后还是点，没法成为一个网的，需要连接，这里需要用到一个redis命令,将两个节点连接起来，构成集群.</p><figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cmd">cluster meet &lt;ip&gt; &lt;port&gt;<br></code></pre></td></tr></table></figure><h2 id="分片和槽"><a href="#分片和槽" class="headerlink" title="分片和槽"></a>分片和槽</h2><p>分片的概念其实不难理解，可以想象一个芝麻烧饼，太大了，不好处理，将它切开，上面的芝麻就会被分布到不同的部分上，分片是一个动词，是分开烧饼的那个动作。<br><strong>分片（sharding）</strong> 是指将数据拆分，将其分散到不同的机器上的过程，有时也用分区这个概念，以上的概念是在一本MongoDb的书中找的，觉得在Redis这里也能适用，不过，有点不同，【需要注意，Redis分片其实是将一个大烧饼分成了很多小烧饼，然后往烧饼上撒芝麻，至于那个芝麻该到哪块小烧饼上去，这个是需要计算的，通过芝麻的特性】专业点就是，集群中的整个数据库看成一个大烧饼，被分成了16384块小烧饼【槽】，数据库中的键（也就是例子中的芝麻）都属于这些槽，至于这一块一块的小烧饼【槽】该归哪个小馋猫【节点】呢？我们可以通过命令分配【这里叫槽指派，cluster addslots slots】slots是从0到16383，但所有的槽全部分配给节点之后，这个集群数据库才算是真正上线，可以接受客户端发来的处理键的命令了。这里有一步，是各个节点传播各自的槽指派信息，也就是说哪个节点处理哪些槽，大家都是心知肚明的。</p><h1 id="集群中命令是如何被执行的"><a href="#集群中命令是如何被执行的" class="headerlink" title="集群中命令是如何被执行的"></a>集群中命令是如何被执行的</h1><p>槽分好了，集群数据库上线了，那么怎么处理客户端发来的命令呢？这么多节点，发来的操作键的命令由哪个节点来做呢？<br>比如，我想节点A发送了一个<code>set data “zhangsan”</code>命令通过计算，data这个键是由368号槽来存，节点A就会查看自己是否管理368号槽，如果不归节点A管，那么归哪个节点管，然后在将这条命令Redirected给管理368号槽的节点。<code>get data</code>命令也是一样，先计算data键是哪个槽，然后把命令redirected到那个节点执行。</p><h1 id="重新分片"><a href="#重新分片" class="headerlink" title="重新分片"></a>重新分片</h1><p>重新分片就是改变槽的分派，把已经分派给某个节点的槽改为分派给另一个节点，Redis集群的重新分片操作由redis-trib管理软件负责执行，在重新分片的过程中，不需要集群下线，并且源节点和目标节点可以继续处理命令请求。<br>具体实现原理，请查阅Redis帮助文档。</p><h1 id="复制和故障转移"><a href="#复制和故障转移" class="headerlink" title="复制和故障转移"></a>复制和故障转移</h1><p>Redis集群中的节点分为主节点和从节点(这个是不是有点熟悉，Redis哨兵系统中也是主服务器和从服务器，这里可以参照Redis哨兵一起加深理解)<br>在正常的时候，主节点负责处理命令请求，从节点只是复制主节点的内容，但是如果主节点进入下线状态，那么其他的正在运行的主节点会从下线了节点的从节点中选出一个作为新的主节点，（这个和哨兵是一样的）<br>那么怎么判断一个节点是否是下线呢？（哨兵是通过Sentinel系统监视每个服务器，如果下线超过了设置的时长，就会采取故障转移操作），这里检测一个节点是否下线，是采取了节点间的互相检测，每个节点会定期的向其他节点发送ping命令，如果在规定的时间内收了pong，那么就是正常在线，否则就会被发送ping命令的这个节点标为疑似下线，如果半数的节点将一个节点标为了疑似下线，那么就将这个疑似下线节点标为下线，采取故障转移操作。</p>]]></content>
+    <content type="html"><![CDATA[<h1 id="redis集群介绍"><a href="#redis集群介绍" class="headerlink" title="redis集群介绍"></a>redis集群介绍</h1><p>Redis Cluster 是一种服务器<code>sharding</code>技术，提供在多个redis节点间共享数据的程序集，redis3.0版本之后正式提供支持。<br>用一张图大致可以理解redis Cluster。<img src="/2023/05/26/redis%E9%9B%86%E7%BE%A4/redis-cluster.png" class="" title="[redis-cluster]"></p><p>一个健康的Redis Cluster至少需要3个master，同时每个master节点至少需要一个slave节点。</p><p>Redis Cluster的节点负责维护数据和获取集群状态，这包括将key映射到正确的节点。集群节点同样可以自动发现其他节点、检测不正确工作节点，以及在发生故障时晋升slave节点到master。</p><p>所有集群节点通过tcp和二进制协议组成的被成为Redis Cluster Bus的方式来实现集群的节点自动发现、故障节点探测、slave升级为master等任务，每个节点通过Cluster Bus连接其他节点，节点间通过<strong>gossip</strong>协议进行集群信息传播。</p><h1 id="redis集群数据分片"><a href="#redis集群数据分片" class="headerlink" title="redis集群数据分片"></a>redis集群数据分片</h1><p>redis集群没有使用一致性hash，而是引入哈希槽的概念，redis集群中有16384个哈希槽，每个key通过CRC16校验之后对16383取模来决定放置在哪个槽，同时槽是集群内部数据管理和迁移的基本单位，redis采用大范围槽的主要目的是为了方便数据拆分和集群扩展，Cluster中的每个节点负责一部分hash槽以及槽所映射的键值数据。</p><p><strong>Redis槽分区的特点</strong></p><ul><li>解耦数据和节点之间的关系，简化节点扩容和收缩的难度</li><li>节点自身维护槽的映射关系，不需要向客户端或者代理服务器维护槽分区元数据</li><li>支持节点、槽、键之间映射关系的查询，用于数据路由、在线伸缩等场景</li></ul><h1 id="redis集群hashTag"><a href="#redis集群hashTag" class="headerlink" title="redis集群hashTag"></a>redis集群hashTag</h1><h1 id="请求重定向"><a href="#请求重定向" class="headerlink" title="请求重定向"></a>请求重定向</h1><p>Redis cluster采用去中心化的架构，集群的主节点各自负责一部分槽，客户端如何确定key到底会映射到哪个节点上呢？这就是我们要讲的请求重定向。</p><p><strong>在cluster模式下，节点对请求的处理过程如下：</strong></p><ul><li>检查当前key是否存在当前节点？ <ul><li>通过crc16（key）&#x2F;16384计算出slot</li><li>查询负责该slot负责的节点，得到节点指针</li><li>该指针与自身节点比较</li></ul></li><li>若slot不是由自身负责，则返回MOVED重定向</li><li>若slot由自身负责，且key在slot中，则返回该key对应结果</li><li>若key不存在此slot中，检查该slot是否正在迁出（MIGRATING）？</li><li>若key正在迁出，返回ASK错误重定向客户端到迁移的目的服务器上</li><li>若Slot未迁出，检查Slot是否导入中？</li><li>若Slot导入中且有ASKING标记，则直接操作</li><li>否则返回MOVED重定向</li></ul><p><font color=red>需要注意的是上述的过程中有MOVED重定向和ACK重定向</font></p><h1 id="故障恢复"><a href="#故障恢复" class="headerlink" title="故障恢复"></a>故障恢复</h1><p>由于Redis将所有数据分到16384个槽中，每个节点负责一部分槽，槽和节点的对应关系是多对一的关系，此时如果集群中的某个master节点发生故障下线，就会导致该Master节点负责的槽不能继续提供服务。</p><h2 id="故障发现"><a href="#故障发现" class="headerlink" title="故障发现"></a>故障发现</h2><p>Redis集群的故障发现也经历两个阶段：<strong>主观下线</strong>和<strong>客观下线</strong>。比如下图节点1判定节点3下线，那么他会标记节点3的状态为主观下线状态。节点1会通过Gossip消息把这个信息发送给其他节点，接收到信息的节点会进行节点3客观下线状态判定，但是如果绝大部分节点（集群中超过1&#x2F;2数目的节点）都判定节点3为主观下线状态，那么我们就可以断定节点3故障下线，其状态判定为客观下线状态，判定结束后，向集群广播节点3下线消息，其他节点都会更新自己维护的节点3的状态信息，标记3为FAIL。当节点3故障后，我们要采用的故障恢复的方案就是让节点3的子节点代替节点3继续向外提供服务。那么节点3有两个slave节点，到底该选择哪个slave节点来替代呢？这就是我们接下来要介绍的故障迁移。<img src="/2023/05/26/redis%E9%9B%86%E7%BE%A4/redis-fail.png" class="" title="故障发现"></p><h2 id="故障转移"><a href="#故障转移" class="headerlink" title="故障转移"></a>故障转移</h2><p>我们接着上面向集群广播消息往下讲。当节点3的的两个Slave节点接收到其主节点的客观下线状态消息时，两个节点就会开始发起故障迁移，竞选成为新的Master节点。两个节点参与竞选之前，首先要检查自身是否有资格参与竞选。</p><p>Slave节点会不停的与Master节点通信来复制Master节点的数据，如果一个Slave节点长时间不与Master节点通信，那么很可能意味着该Slave节点上的数据已经落后Master节点过多（因为Master节点再不停的更新数据但是Slave节点并没有随之更新）。Redis认为，当一个Slave节点过长时间不与Master节点通信，那么该节点就不具备参与竞选的资格。</p><p><strong>故障恢复过程</strong></p><ul><li>slave发现自己的master变为FAIL</li><li>将自己记录的集群currentEpoch加1，并广播Failover Request信息</li><li>其他节点收到该信息，只有master响应，判断请求者的合法性，并发送FAILOVER_AUTH_ACK，对每一个epoch只发送一次ack</li><li>尝试failover的slave收集FAILOVER_AUTH_ACK超过半数后变成新Master</li><li>广播Pong通知其他集群节点</li></ul>]]></content>
     
     
+    
+    <tags>
+      
+      <tag>redis-cluster</tag>
+      
+      <tag>redis</tag>
+      
+    </tags>
     
   </entry>
   
