@@ -1,0 +1,668 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="zhaozonglu">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Kafka生产者使用示例本文使用Maven项目引入kafka依赖的方式进行介绍，这样更能清楚了解Kafka是如何配置使用的。 首先引入依赖包 12345&lt;dependency&gt;  &lt;groupId&gt;org.apache.kafka&lt;&#x2F;groupId&gt;  &lt;artifactId&gt;kafka_2.13&lt;&#x2F;artifactId&gt;  &lt;ve">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka生产者架构分析">
+<meta property="og:url" content="https://zhaozonglu.github.io/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="廿号玺园">
+<meta property="og:description" content="Kafka生产者使用示例本文使用Maven项目引入kafka依赖的方式进行介绍，这样更能清楚了解Kafka是如何配置使用的。 首先引入依赖包 12345&lt;dependency&gt;  &lt;groupId&gt;org.apache.kafka&lt;&#x2F;groupId&gt;  &lt;artifactId&gt;kafka_2.13&lt;&#x2F;artifactId&gt;  &lt;ve">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhaozonglu.github.io/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/kafka-producer.png">
+<meta property="article:published_time" content="2023-06-05T10:37:50.000Z">
+<meta property="article:modified_time" content="2023-06-06T09:37:13.235Z">
+<meta property="article:author" content="zhaozonglu">
+<meta property="article:tag" content="kafka">
+<meta property="article:tag" content="procedure">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://zhaozonglu.github.io/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/kafka-producer.png">
+  
+  
+  
+  <title>Kafka生产者架构分析 - 廿号玺园</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"zhaozonglu.github.io","root":"/","version":"1.9.4","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Kafka生产者架构分析"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-06-05 18:37" pubdate>
+          2023年6月5日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          17k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          142 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kafka生产者架构分析</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Kafka生产者使用示例"><a href="#Kafka生产者使用示例" class="headerlink" title="Kafka生产者使用示例"></a>Kafka生产者使用示例</h1><p>本文使用Maven项目引入kafka依赖的方式进行介绍，这样更能清楚了解Kafka是如何配置使用的。</p>
+<p><strong>首先引入依赖包</strong></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.kafka<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>kafka_2.13<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>编写测试示例代码</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-title function_">KafkaProcedureDemo</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException &#123;<br>        <span class="hljs-type">Properties</span> <span class="hljs-variable">properties</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Properties</span>();<br>        <span class="hljs-comment">// Kafka生产者相关配置的枚举都在ProducerConfig类中</span><br>        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, <span class="hljs-string">&quot;localhost:9092&quot;</span>); <span class="hljs-comment">// bootstrap.servers</span><br>        properties.put(ProducerConfig.ACKS_CONFIG, <span class="hljs-string">&quot;all&quot;</span>); <span class="hljs-comment">// acks</span><br>        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, <span class="hljs-number">16384</span>); <span class="hljs-comment">// batch.size</span><br>        properties.put(ProducerConfig.LINGER_MS_CONFIG,<span class="hljs-number">1</span>);<br>        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,<span class="hljs-number">10240</span>);<br>        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);<br>        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,StringSerializer.class);<br>        properties.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, <span class="hljs-literal">null</span>);<br><br>        KafkaProducer&lt;String,String&gt; kafkaProducer = <span class="hljs-keyword">new</span> <span class="hljs-title class_">KafkaProducer</span>&lt;String, String&gt;(properties);<br>        ProducerRecord&lt;String, String&gt; producerRecord = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ProducerRecord</span>&lt;String, String&gt;(<span class="hljs-string">&quot;topic&quot;</span>,<span class="hljs-string">&quot;key&quot;</span>,<span class="hljs-string">&quot;value&quot;</span>);<br><br>        <span class="hljs-comment">// 发送即忘</span><br>        kafkaProducer.send(producerRecord);<br><br>        <span class="hljs-comment">// 同步发送</span><br>        <span class="hljs-type">RecordMetadata</span> <span class="hljs-variable">metadata</span> <span class="hljs-operator">=</span> kafkaProducer.send(producerRecord).get();<br><br>        <span class="hljs-comment">// 异步发送</span><br>        kafkaProducer.send(producerRecord, (recordMetadata, e) -&gt; &#123;<br>            <span class="hljs-comment">// 回调方法</span><br>        &#125;);<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>ProducerConfig类中部分配置</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ProducerConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">AbstractConfig</span> &#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">Logger</span> <span class="hljs-variable">log</span> <span class="hljs-operator">=</span> LoggerFactory.getLogger(ProducerConfig.class);<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> ConfigDef CONFIG;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">BOOTSTRAP_SERVERS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;bootstrap.servers&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">CLIENT_DNS_LOOKUP_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;client.dns.lookup&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METADATA_MAX_AGE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metadata.max.age.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METADATA_MAX_AGE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The period of time in milliseconds after which we force a refresh of metadata even if we haven&#x27;t seen any partition leadership changes to proactively discover any new brokers or partitions.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METADATA_MAX_IDLE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metadata.max.idle.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METADATA_MAX_IDLE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;Controls how long the producer will cache metadata for a topic that&#x27;s idle. If the elapsed time since a topic was last produced to exceeds the metadata idle duration, then the topic&#x27;s metadata is forgotten and the next access to it will force a metadata fetch request.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">BATCH_SIZE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;batch.size&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">BATCH_SIZE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The producer will attempt to batch records together into fewer requests whenever multiple records are being sent to the same partition. This helps performance on both the client and the server. This configuration controls the default batch size in bytes. &lt;p&gt;No attempt will be made to batch records larger than this size. &lt;p&gt;Requests sent to brokers will contain multiple batches, one for each partition with data available to be sent. &lt;p&gt;A small batch size will make batching less common and may reduce throughput (a batch size of zero will disable batching entirely). A very large batch size may use memory a bit more wastefully as we will always allocate a buffer of the specified batch size in anticipation of additional records.&lt;p&gt;Note: This setting gives the upper bound of the batch size to be sent. If we have fewer than this many bytes accumulated for this partition, we will &#x27;linger&#x27; for the &lt;code&gt;linger.ms&lt;/code&gt; time waiting for more records to show up. This &lt;code&gt;linger.ms&lt;/code&gt; setting defaults to 0, which means we&#x27;ll immediately send out a record even the accumulated batch size is under this &lt;code&gt;batch.size&lt;/code&gt; setting.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_ADPATIVE_PARTITIONING_ENABLE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;partitioner.adaptive.partitioning.enable&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_ADPATIVE_PARTITIONING_ENABLE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;When set to &#x27;true&#x27;, the producer will try to adapt to broker performance and produce more messages to partitions hosted on faster brokers. If &#x27;false&#x27;, producer will try to distribute messages uniformly. Note: this setting has no effect if a custom partitioner is used&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;partitioner.availability.timeout.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_AVAILABILITY_TIMEOUT_MS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;If a broker cannot process produce requests from a partition for &lt;code&gt;partitioner.availability.timeout.ms&lt;/code&gt; time, the partitioner treats that partition as not available.  If the value is 0, this logic is disabled. Note: this setting has no effect if a custom partitioner is used or &lt;code&gt;partitioner.adaptive.partitioning.enable&lt;/code&gt; is set to &#x27;false&#x27;&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_IGNORE_KEYS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;partitioner.ignore.keys&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">PARTITIONER_IGNORE_KEYS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;When set to &#x27;true&#x27; the producer won&#x27;t use record keys to choose a partition. If &#x27;false&#x27;, producer would choose a partition based on a hash of the key when a key is present. Note: this setting has no effect if a custom partitioner is used.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">ACKS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;acks&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">ACKS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The number of acknowledgments the producer requires the leader to have received before considering a request complete. This controls the  durability of records that are sent. The following settings are allowed:  &lt;ul&gt; &lt;li&gt;&lt;code&gt;acks=0&lt;/code&gt; If set to zero then the producer will not wait for any acknowledgment from the server at all. The record will be immediately added to the socket buffer and considered sent. No guarantee can be made that the server has received the record in this case, and the &lt;code&gt;retries&lt;/code&gt; configuration will not take effect (as the client won&#x27;t generally know of any failures). The offset given back for each record will always be set to &lt;code&gt;-1&lt;/code&gt;. &lt;li&gt;&lt;code&gt;acks=1&lt;/code&gt; This will mean the leader will write the record to its local log but will respond without awaiting full acknowledgement from all followers. In this case should the leader fail immediately after acknowledging the record but before the followers have replicated it then the record will be lost. &lt;li&gt;&lt;code&gt;acks=all&lt;/code&gt; This means the leader will wait for the full set of in-sync replicas to acknowledge the record. This guarantees that the record will not be lost as long as at least one in-sync replica remains alive. This is the strongest available guarantee. This is equivalent to the acks=-1 setting.&lt;/ul&gt;&lt;p&gt;Note that enabling idempotence requires this config value to be &#x27;all&#x27;. If conflicting configurations are set and idempotence is not explicitly enabled, idempotence is disabled.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">LINGER_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;linger.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">LINGER_MS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The producer groups together any records that arrive in between request transmissions into a single batched request. Normally this occurs only under load when records arrive faster than they can be sent out. However in some circumstances the client may want to reduce the number of requests even under moderate load. This setting accomplishes this by adding a small amount of artificial delay&amp;mdash;that is, rather than immediately sending out a record, the producer will wait for up to the given delay to allow other records to be sent so that the sends can be batched together. This can be thought of as analogous to Nagle&#x27;s algorithm in TCP. This setting gives the upper bound on the delay for batching: once we get &lt;code&gt;batch.size&lt;/code&gt; worth of records for a partition it will be sent immediately regardless of this setting, however if we have fewer than this many bytes accumulated for this partition we will &#x27;linger&#x27; for the specified time waiting for more records to show up. This setting defaults to 0 (i.e. no delay). Setting &lt;code&gt;linger.ms=5&lt;/code&gt;, for example, would have the effect of reducing the number of requests sent but would add up to 5ms of latency to records sent in the absence of load.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">REQUEST_TIMEOUT_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;request.timeout.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">REQUEST_TIMEOUT_MS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The configuration controls the maximum amount of time the client will wait for the response of a request. If the response is not received before the timeout elapses the client will resend the request if necessary or fail the request if retries are exhausted. This should be larger than &lt;code&gt;replica.lag.time.max.ms&lt;/code&gt; (a broker configuration) to reduce the possibility of message duplication due to unnecessary producer retries.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">DELIVERY_TIMEOUT_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;delivery.timeout.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">DELIVERY_TIMEOUT_MS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;An upper bound on the time to report success or failure after a call to &lt;code&gt;send()&lt;/code&gt; returns. This limits the total time that a record will be delayed prior to sending, the time to await acknowledgement from the broker (if expected), and the time allowed for retriable send failures. The producer may report failure to send a record earlier than this config if either an unrecoverable error is encountered, the retries have been exhausted, or the record is added to a batch which reached an earlier delivery expiration deadline. The value of this config should be greater than or equal to the sum of &lt;code&gt;request.timeout.ms&lt;/code&gt; and &lt;code&gt;linger.ms&lt;/code&gt;.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">CLIENT_ID_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;client.id&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">SEND_BUFFER_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;send.buffer.bytes&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">RECEIVE_BUFFER_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;receive.buffer.bytes&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">MAX_REQUEST_SIZE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;max.request.size&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">MAX_REQUEST_SIZE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The maximum size of a request in bytes. This setting will limit the number of record batches the producer will send in a single request to avoid sending huge requests. This is also effectively a cap on the maximum uncompressed record batch size. Note that the server has its own cap on the record batch size (after compression if compression is enabled) which may be different from this.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">RECONNECT_BACKOFF_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;reconnect.backoff.ms&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">RECONNECT_BACKOFF_MAX_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;reconnect.backoff.max.ms&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">MAX_BLOCK_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;max.block.ms&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">MAX_BLOCK_MS_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The configuration controls how long the &lt;code&gt;KafkaProducer&lt;/code&gt;&#x27;s &lt;code&gt;send()&lt;/code&gt;, &lt;code&gt;partitionsFor()&lt;/code&gt;, &lt;code&gt;initTransactions()&lt;/code&gt;, &lt;code&gt;sendOffsetsToTransaction()&lt;/code&gt;, &lt;code&gt;commitTransaction()&lt;/code&gt; and &lt;code&gt;abortTransaction()&lt;/code&gt; methods will block. For &lt;code&gt;send()&lt;/code&gt; this timeout bounds the total time waiting for both metadata fetch and buffer allocation (blocking in the user-supplied serializers or partitioner is not counted against this timeout). For &lt;code&gt;partitionsFor()&lt;/code&gt; this timeout bounds the time spent waiting for metadata if it is unavailable. The transaction-related methods always block, but may timeout if the transaction coordinator could not be discovered or did not respond within the timeout.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">BUFFER_MEMORY_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;buffer.memory&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">BUFFER_MEMORY_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The total bytes of memory the producer can use to buffer records waiting to be sent to the server. If records are sent faster than they can be delivered to the server the producer will block for &lt;code&gt;max.block.ms&lt;/code&gt; after which it will throw an exception.&lt;p&gt;This setting should correspond roughly to the total memory the producer will use, but is not a hard bound since not all memory the producer uses is used for buffering. Some additional memory will be used for compression (if compression is enabled) as well as for maintaining in-flight requests.&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">RETRY_BACKOFF_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;retry.backoff.ms&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">COMPRESSION_TYPE_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;compression.type&quot;</span>;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">COMPRESSION_TYPE_DOC</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;The compression type for all data generated by the producer. The default is none (i.e. no compression). Valid  values are &lt;code&gt;none&lt;/code&gt;, &lt;code&gt;gzip&lt;/code&gt;, &lt;code&gt;snappy&lt;/code&gt;, &lt;code&gt;lz4&lt;/code&gt;, or &lt;code&gt;zstd&lt;/code&gt;. Compression is of full batches of data, so the efficacy of batching will also impact the compression ratio (more batching means better compression).&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METRICS_SAMPLE_WINDOW_MS_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metrics.sample.window.ms&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METRICS_NUM_SAMPLES_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metrics.num.samples&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METRICS_RECORDING_LEVEL_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metrics.recording.level&quot;</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">String</span> <span class="hljs-variable">METRIC_REPORTER_CLASSES_CONFIG</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;metric.reporters&quot;</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<p><strong>ProducerRecord几个构造方法</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, Integer partition, Long timestamp, K key, V value, Iterable&lt;Header&gt; headers)</span><br><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, Integer partition, Long timestamp, K key, V value)</span><br><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, Integer partition, K key, V value, Iterable&lt;Header&gt; headers)</span><br><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, Integer partition, K key, V value)</span><br><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, K key, V value)</span><br><span class="hljs-keyword">public</span> <span class="hljs-title function_">ProducerRecord</span><span class="hljs-params">(String topic, V value)</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>跟进到KafkaProducer.send()方法中</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> Future&lt;RecordMetadata&gt; <span class="hljs-title function_">send</span><span class="hljs-params">(ProducerRecord&lt;K, V&gt; record, Callback callback)</span> &#123;<br>	<span class="hljs-comment">// 1. 通过ProducerInterceptors.onSend()对消息进行拦截或修改</span><br>    ProducerRecord&lt;K, V&gt; interceptedRecord = <span class="hljs-built_in">this</span>.interceptors.onSend(record);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>.doSend(interceptedRecord, callback);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>ProducerInterceptors</code>拦截器可以通过<code>KafkaProducer</code>构造方法指定，或者是通过配置<code>interceptor.classes</code>配置指定</p>
+<p><strong>下面为KafkaProducer构造器部分代码</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java">List&lt;ProducerInterceptor&lt;K, V&gt;&gt; interceptorList = config.getConfiguredInstances(<span class="hljs-string">&quot;interceptor.classes&quot;</span>, ProducerInterceptor.class, Collections.singletonMap(<span class="hljs-string">&quot;client.id&quot;</span>, <span class="hljs-built_in">this</span>.clientId));<br><span class="hljs-keyword">if</span> (interceptors != <span class="hljs-literal">null</span>) &#123;<br>    <span class="hljs-built_in">this</span>.interceptors = interceptors;<br>&#125; <span class="hljs-keyword">else</span> &#123;<br>    <span class="hljs-built_in">this</span>.interceptors = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ProducerInterceptors</span>(interceptorList);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>继续跟进doSend()方法中，这里重点列几个代码段</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><br><span class="hljs-comment">// key序列化</span><br>serializedKey = <span class="hljs-built_in">this</span>.keySerializer.serialize(record.topic(), record.headers(), record.key());<br><br><span class="hljs-comment">// value序列化</span><br>serializedValue = <span class="hljs-built_in">this</span>.valueSerializer.serialize(record.topic(), record.headers(), record.value());<br><br><span class="hljs-comment">// 分区</span><br><span class="hljs-type">int</span> <span class="hljs-variable">partition</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>.partition(record, serializedKey, serializedValue, cluster);<br><br><span class="hljs-comment">// 消息累计</span><br>result = <span class="hljs-built_in">this</span>.accumulator.append(record.topic(), partition, timestamp, serializedKey, serializedValue, headers, appendCallbacks, remainingWaitMs, <span class="hljs-literal">false</span>, nowMs, cluster);<br><br><br><span class="hljs-comment">// 唤醒sender线程</span><br><span class="hljs-keyword">if</span> (result.batchIsFull || result.newBatchCreated) &#123;<br>    <span class="hljs-built_in">this</span>.log.trace(<span class="hljs-string">&quot;Waking up the sender since topic &#123;&#125; partition &#123;&#125; is either full or getting a new batch&quot;</span>, record.topic(), appendCallbacks.getPartition());<br>    <span class="hljs-built_in">this</span>.sender.wakeup();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="生产者整体架构图"><a href="#生产者整体架构图" class="headerlink" title="生产者整体架构图"></a>生产者整体架构图</h1><p>前面我们根据源码可以分析消息在真正发送到kafka Broker之前，有可能会经历拦截器、序列化器、分区器等一系列操作，下面是生产者的整体架构图：<img src="/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/kafka-producer.png" srcset="/img/loading.gif" lazyload class="" title="kafka生产者架构图"></p>
+<p>从图上可以看出，整个生产者客户端由两个线程协作运行，一个是主线程，一个是sender线程。在主线程中由KafkaProducer创建消息，然后通过拦截器、序列化器、分区器之后，将消息存到消息累加器中。然后由Sender线程负责从消息累加器中获取消息并发送到Kafka中。</p>
+<h2 id="消息累加器RecordAccumulator"><a href="#消息累加器RecordAccumulator" class="headerlink" title="消息累加器RecordAccumulator"></a>消息累加器RecordAccumulator</h2><p>消息累加器的关键数据结构如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">RecordAccumulator</span> &#123;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ConcurrentMap&lt;String, RecordAccumulator.TopicInfo&gt; topicInfoMap;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TopicInfo</span> &#123;<br>        <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ConcurrentMap&lt;Integer, Deque&lt;ProducerBatch&gt;&gt; batches = <span class="hljs-keyword">new</span> <span class="hljs-title class_">CopyOnWriteMap</span>();<br>        <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> BuiltInPartitioner builtInPartitioner;<br><br>        <span class="hljs-keyword">public</span> <span class="hljs-title function_">TopicInfo</span><span class="hljs-params">(LogContext logContext, String topic, <span class="hljs-type">int</span> stickyBatchSize)</span> &#123;<br>            <span class="hljs-built_in">this</span>.builtInPartitioner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">BuiltInPartitioner</span>(logContext, topic, stickyBatchSize);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>RecordAccumulator主要作用是用来缓存消息，减少网络传输的资源消耗提升性能，缓存的大小可以通过生产者客户端参数<code>buffer.memory</code>配置，默认是32M。<br><font color=red><strong>如果生产者发送消息的速度超过发送到服务器的速度，则导致生产者空间不足，这个时候KafkaProducer的send()方法调用要么阻塞，要么抛出异常，这个取决于<code>max.block.ms</code>参数的配置，此参数默认60s</strong></font></p>
+<p>从RecordAccumulator的源码可以看出主线程发送过来的消息会被追加到一个<code>Deque&lt;ProducerBatch&gt;</code>中，是一个双端队列，队列的内容是<code>ProducerBatch</code>，<strong>ProducerBatch中可以包含一个至多个ProducerRecord</strong>，可以理解为ProducerBatch是一个消息批次，这样可以使字节的使用更加紧凑，同时可以减少网络请求次数提升整体吞吐量。</p>
+<h2 id="Sender线程"><a href="#Sender线程" class="headerlink" title="Sender线程"></a>Sender线程</h2><p>Sender线程处理的关键代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-type">long</span> <span class="hljs-title function_">sendProducerData</span><span class="hljs-params">(<span class="hljs-type">long</span> now)</span> &#123;<br>    <span class="hljs-comment">// 拉取kafka集群元数据</span><br>    <span class="hljs-type">Cluster</span> <span class="hljs-variable">cluster</span> <span class="hljs-operator">=</span> metadata.fetch();<br><br>    <span class="hljs-comment">// ...</span><br><br>    <span class="hljs-comment">// 将&lt;分区, Deque&lt;ProducerBatch&gt;&gt; 结构转换成 &lt;Node,List&lt;ProducerBatch&gt;&gt;结构</span><br>    Map&lt;Integer, List&lt;ProducerBatch&gt;&gt; batches = <span class="hljs-built_in">this</span>.accumulator.drain(cluster, result.readyNodes, <span class="hljs-built_in">this</span>.maxRequestSize, now);<br><br>    <span class="hljs-comment">// 发送</span><br>    sendProduceRequests(batches, now);<br>&#125;<br><br><span class="hljs-comment">// 底层发送的逻辑</span><br><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doSend</span><span class="hljs-params">(ClientRequest clientRequest, <span class="hljs-type">boolean</span> isInternalRequest, <span class="hljs-type">long</span> now, AbstractRequest request)</span> &#123;<br>    <span class="hljs-comment">// 构建InFlightRequest</span><br>    <span class="hljs-type">InFlightRequest</span> <span class="hljs-variable">inFlightRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">InFlightRequest</span>(<br>            clientRequest,<br>            header,<br>            isInternalRequest,<br>            request,<br>            send,<br>            now);<br>    <span class="hljs-built_in">this</span>.inFlightRequests.add(inFlightRequest);<br>    selector.send(<span class="hljs-keyword">new</span> <span class="hljs-title class_">NetworkSend</span>(clientRequest.destination(), send));<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>根据Sender线程源码，我们可以了解到，Sender线程从消息累加器RecordAccumulator中获取缓存消息之后，会先把<code>&lt;分区, Deque&lt;ProducerBatch&gt;&gt;</code>形式的结构数据转换成<code>&lt;Node,List&lt;ProducerBatch&gt;&gt;</code>结构数据，其中Node表示的是kafka集群中的broker节点，生产者客户端与具体的Node建立链接，向这个具体的Node发送消息。</p>
+<p>同时请求在从Sender线程发往kafka之前，还会保存在InFlightRequest中，<font color=red>InFlightRequest的主要作用是缓存已经发出去但是还没有收到响应的请求</font>，可以通过<code>max.in.flight.requests.per.connection</code>来配置限制每个连接最多缓存的请求数，默认值是5。</p>
+<h1 id="几个重要的生产者参数"><a href="#几个重要的生产者参数" class="headerlink" title="几个重要的生产者参数"></a>几个重要的生产者参数</h1><ul>
+<li>acks 发送消息到Kafka服务器的确认机制，0：不需要等返回，安全最低，效率最高  1:只要Leader副本应答就可以发送下一条，确保Leader接受成功  -1:所有ISR副本都接受到才可以发送下一条，安全性最高，但是效率低</li>
+<li>buffer.memory</li>
+<li>batch.size 每个batch要缓存多少数据后发送，默认16kb</li>
+<li>max.request.size 决定了每次发送给Kafka服务器请求消息的最大值，如果发送的消息都是大的报文消息，单条消息的数据比较大，此时需要同时调整batch.size和buffer.memory</li>
+<li>linger.ms 配合batch.size来使用，一个batch被创建最多过多久，不管这个batch有没有写满，都要发送出去，默认是0</li>
+<li>max.in.flight.requests.per.connection 每个连接可以缓存的请求数，如果要求100%的消息有序，这里可以设置为1</li>
+<li>retries和retries.backoff.ms 重试机制，一个请求失败可以重试几次，每次重试之间间隔的毫秒数</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/kafka/">#kafka</a>
+      
+        <a href="/tags/procedure/">#procedure</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Kafka生产者架构分析</div>
+      <div>https://zhaozonglu.github.io/2023/06/05/Kafka生产者架构分析/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>zhaozonglu</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年6月5日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/06/05/Java-Java%E5%86%85%E5%AD%98%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80/" title="Java/Java内存对象布局">
+                        <span class="hidden-mobile">Java/Java内存对象布局</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

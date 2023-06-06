@@ -16,23 +16,23 @@
   <meta name="author" content="zhaozonglu">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Gossip协议介绍Gossip Protocol协议也叫Epidemic Protocol流行病协议，原本用于分布式数据库中节点同步数据使用，后被广泛用于数据库复制、信息扩散、集群成员身份确认、故障探测等。 Gossip协议是基于六度分隔理论则，就是一个人可以通过6个中间人认识世界上的任何一个人，基于该理论，任何信息的传播是非常迅速的，而且网络交互次数不会很多。 Gossip协议是一个最终一致性">
+    <meta name="description" content="Synchronized介绍Synchronized的使用Synchronized底层原理对象头Monitor对象同步代码块的实现同步方法的实现Synchronized优化偏向锁轻量级锁重量级锁参考文档：https:&#x2F;&#x2F;juejin.cn&#x2F;post&#x2F;6973571891915128846https:&#x2F;&#x2F;www.cnblogs.com&#x2F;three-fighter&#x2F;p&#x2F;14396208.htmlhtt">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis Cluster Gossip协议">
-<meta property="og:url" content="https://zhaozonglu.github.io/2023/05/31/Redis-Cluster-Gossip%E5%8D%8F%E8%AE%AE/index.html">
+<meta property="og:title" content="Java中synchronized关键字">
+<meta property="og:url" content="https://zhaozonglu.github.io/2023/06/05/Java%E4%B8%ADsynchronized%E5%85%B3%E9%94%AE%E5%AD%97/index.html">
 <meta property="og:site_name" content="廿号玺园">
-<meta property="og:description" content="Gossip协议介绍Gossip Protocol协议也叫Epidemic Protocol流行病协议，原本用于分布式数据库中节点同步数据使用，后被广泛用于数据库复制、信息扩散、集群成员身份确认、故障探测等。 Gossip协议是基于六度分隔理论则，就是一个人可以通过6个中间人认识世界上的任何一个人，基于该理论，任何信息的传播是非常迅速的，而且网络交互次数不会很多。 Gossip协议是一个最终一致性">
+<meta property="og:description" content="Synchronized介绍Synchronized的使用Synchronized底层原理对象头Monitor对象同步代码块的实现同步方法的实现Synchronized优化偏向锁轻量级锁重量级锁参考文档：https:&#x2F;&#x2F;juejin.cn&#x2F;post&#x2F;6973571891915128846https:&#x2F;&#x2F;www.cnblogs.com&#x2F;three-fighter&#x2F;p&#x2F;14396208.htmlhtt">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2023-05-31T12:28:15.000Z">
-<meta property="article:modified_time" content="2023-06-05T04:20:46.077Z">
+<meta property="article:published_time" content="2023-06-05T05:34:54.000Z">
+<meta property="article:modified_time" content="2023-06-05T05:45:41.242Z">
 <meta property="article:author" content="zhaozonglu">
-<meta property="article:tag" content="redis-cluster">
-<meta property="article:tag" content="Gossip协议">
+<meta property="article:tag" content="synchronized">
+<meta property="article:tag" content="多线程并发">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>Redis Cluster Gossip协议 - 廿号玺园</title>
+  <title>Java中synchronized关键字 - 廿号玺园</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -198,7 +198,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Redis Cluster Gossip协议"></span>
+            <span id="subtitle" data-typed-text="Java中synchronized关键字"></span>
           
         </div>
 
@@ -209,8 +209,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2023-05-31 20:28" pubdate>
-          2023年5月31日 晚上
+        <time datetime="2023-06-05 13:34" pubdate>
+          2023年6月5日 下午
         </time>
       </span>
     
@@ -221,7 +221,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.8k 字
+          235 字
         
       </span>
     
@@ -232,7 +232,7 @@
         
         
         
-          16 分钟
+          2 分钟
         
       </span>
     
@@ -270,52 +270,12 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Redis Cluster Gossip协议</h1>
+            <h1 style="display: none">Java中synchronized关键字</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="Gossip协议介绍"><a href="#Gossip协议介绍" class="headerlink" title="Gossip协议介绍"></a>Gossip协议介绍</h1><p><code>Gossip Protocol</code>协议也叫<code>Epidemic Protocol</code>流行病协议，原本用于分布式数据库中节点同步数据使用，后被广泛用于数据库复制、信息扩散、集群成员身份确认、故障探测等。</p>
-<p>Gossip协议是基于六度分隔理论则，就是一个人可以通过6个中间人认识世界上的任何一个人，基于该理论，任何信息的传播是非常迅速的，而且网络交互次数不会很多。</p>
-<p>Gossip协议是一个最终一致性算法，虽然无法保证某个时刻所有节点状态一直，但是可以保证最终所有节点状态一致，因为Gossip协议不要求节点知道所有其他节点，因此具有去中心化的特点，节点之间完全对等，不需要任何中心节点。</p>
-<p>但是Gossip节点的确定也很明显，冗余通信会对网络带宽、CPU资源造成很大的负载，这些负载受限于通信频率，通信频率影响算法收敛的速度。</p>
-<h2 id="Gossip协议执行过程"><a href="#Gossip协议执行过程" class="headerlink" title="Gossip协议执行过程"></a>Gossip协议执行过程</h2><ul>
-<li>种子节点周期性的散播消息（假定周期限定为1s）</li>
-<li>被感染节点随机选择N个邻接节点散播消息（假定fan-out扇出设置为6，每次最多往6个节点散播）</li>
-<li>节点只接受消息不反馈结果</li>
-<li>收到消息的节点不再往发送节点散播</li>
-</ul>
-<h2 id="Gossip协议消息传播方式"><a href="#Gossip协议消息传播方式" class="headerlink" title="Gossip协议消息传播方式"></a>Gossip协议消息传播方式</h2><h3 id="反熵传播-Anti-Entropy"><a href="#反熵传播-Anti-Entropy" class="headerlink" title="反熵传播 Anti-Entropy"></a>反熵传播 Anti-Entropy</h3><p>以固定的概率传播所有的数据，所有参与节点只有两种状态：</p>
-<blockquote>
-<p>Suspective(病原)：处于该状态的节点代表其并没有收到来自其他节点的更新.<br>Infective(感染)：处于该状态的节点代表其有数据更新，并且会将这个数据分享给其他节点。</p>
-</blockquote>
-<p>反熵传播过程是每个节点周期性地随机选择其他节点，然后通过互相交换自己的所有数据来消除两者之间的差异，反熵传播方法每次节点两两交换自己的所有数据会带来非常大的通信负担，因此不会频繁使用，通常只有用于新加入节点的数据初始化。</p>
-<h3 id="谣言传播-Rumor-Mongering"><a href="#谣言传播-Rumor-Mongering" class="headerlink" title="谣言传播 Rumor-Mongering"></a>谣言传播 Rumor-Mongering</h3><p>以固定的概率仅传播新到达的数据，所有参与节点有三种状态：</p>
-<blockquote>
-<p>Suspective(病原)：处于该状态的节点代表其并没有收到来自其他节点的更新.<br>Infective(感染)：处于该状态的节点代表其有数据更新，并且会将这个数据分享给其他节点。<br>Removed(愈除)：其已经接受到来自其他节点的更新，但是其并不会将这个更新分享给其他节点。</p>
-</blockquote>
-<p>谣言传播过程是消息只包含最新update，谣言消息在某个时间点之后会被标记为removed，并且不再被传播。缺点是系统有一定的概率会不一致，通常用于节点间数据增量同步。</p>
-<h2 id="Gossip节点通信方式"><a href="#Gossip节点通信方式" class="headerlink" title="Gossip节点通信方式"></a>Gossip节点通信方式</h2><p>Gossip 协议最终目的是将数据分发到网络中的每一个节点。不管是<code>Anti-Entropy</code>还是 <code>Rumor-Mongering</code>都涉及到节点间的数据交互方式，Gossip网络中两个节点之间存在三种通信方式：Push、Pull 以及 Push&amp;Pull</p>
-<ul>
-<li>Push:发起信息交换的节点A随机选择联系节点B,并向其发送自己的信息，节点B在收到信息后更新比自己新的数据，一般拥有新信息的节点才会作为发起节点</li>
-<li>Pull:发起信息交换的节点A随机选择联系节点B，并从对方获取信息。一般无新信息的节点才会作为发起节点。</li>
-<li>Push&amp;Pull:发起信息交换的节点A向选择的节点B发送信息，同时从对方获取数据，用于更新自己的本地数据。</li>
-</ul>
-<h1 id="Gossip协议在Redis-Cluster中的使用"><a href="#Gossip协议在Redis-Cluster中的使用" class="headerlink" title="Gossip协议在Redis Cluster中的使用"></a>Gossip协议在Redis Cluster中的使用</h1><p>Redis在3.0版本引入Redis Cluster集群功能，Redis集群各节点之间按照Gossip协议通信传递消息。</p>
-<p>Redis Cluster中的每个节点都维护一份自己视角下的当前整个集群的状态，主要包括：</p>
-<ol>
-<li>当前集群状态</li>
-<li>集群中各个节点所负责的槽信息，以及其migrate状态</li>
-<li>集群中各个节点的master-slave状态</li>
-<li>集群中各个节点存活状态以及怀疑Fail状态</li>
-</ol>
-<p>Redis Cluster的节点之间互相发送多种消息，较为重要的有以下几个：</p>
-<ol>
-<li>meet：通过<code>cluster meet ip port</code>命令，已有集群中的节点向新节点发送邀请，加入现有集群，然后新节点就会开始和其他节点进行通信</li>
-<li>ping：节点按照配置时间间隔向集群中其他节点发送ping消息，消息中有自己状态，还有自己维护的集群元数据，和部分其他节点元数据。</li>
-<li>pong：节点用于回应ping和meet的消息，结构和ping消息类似，包括自己的状态和集群其他信息，也可以用于信息广播和更新。</li>
-<li>fail:节点ping不通某个节点后，会更新集群中所有节点广播该节点挂掉的消息，其他节点收到消息标记已下线。</li>
-</ol>
+                <h1 id="Synchronized介绍"><a href="#Synchronized介绍" class="headerlink" title="Synchronized介绍"></a>Synchronized介绍</h1><h1 id="Synchronized的使用"><a href="#Synchronized的使用" class="headerlink" title="Synchronized的使用"></a>Synchronized的使用</h1><h1 id="Synchronized底层原理"><a href="#Synchronized底层原理" class="headerlink" title="Synchronized底层原理"></a>Synchronized底层原理</h1><h2 id="对象头"><a href="#对象头" class="headerlink" title="对象头"></a>对象头</h2><h2 id="Monitor对象"><a href="#Monitor对象" class="headerlink" title="Monitor对象"></a>Monitor对象</h2><h2 id="同步代码块的实现"><a href="#同步代码块的实现" class="headerlink" title="同步代码块的实现"></a>同步代码块的实现</h2><h2 id="同步方法的实现"><a href="#同步方法的实现" class="headerlink" title="同步方法的实现"></a>同步方法的实现</h2><h1 id="Synchronized优化"><a href="#Synchronized优化" class="headerlink" title="Synchronized优化"></a>Synchronized优化</h1><h2 id="偏向锁"><a href="#偏向锁" class="headerlink" title="偏向锁"></a>偏向锁</h2><h2 id="轻量级锁"><a href="#轻量级锁" class="headerlink" title="轻量级锁"></a>轻量级锁</h2><h2 id="重量级锁"><a href="#重量级锁" class="headerlink" title="重量级锁"></a>重量级锁</h2><p>参考文档：<a target="_blank" rel="noopener" href="https://juejin.cn/post/6973571891915128846">https://juejin.cn/post/6973571891915128846</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/three-fighter/p/14396208.html">https://www.cnblogs.com/three-fighter/p/14396208.html</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/377423211">https://zhuanlan.zhihu.com/p/377423211</a></p>
 
                 
               </div>
@@ -328,9 +288,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/redis-cluster/">#redis-cluster</a>
+        <a href="/tags/synchronized/">#synchronized</a>
       
-        <a href="/tags/Gossip%E5%8D%8F%E8%AE%AE/">#Gossip协议</a>
+        <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%B9%B6%E5%8F%91/">#多线程并发</a>
       
     </div>
   
@@ -342,8 +302,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Redis Cluster Gossip协议</div>
-      <div>https://zhaozonglu.github.io/2023/05/31/Redis-Cluster-Gossip协议/</div>
+      <div>Java中synchronized关键字</div>
+      <div>https://zhaozonglu.github.io/2023/06/05/Java中synchronized关键字/</div>
     </div>
     <div class="license-meta">
       
@@ -355,7 +315,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2023年5月31日</div>
+          <div>2023年6月5日</div>
         </div>
       
       
@@ -387,9 +347,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2023/06/05/Java%E4%B8%ADsynchronized%E5%85%B3%E9%94%AE%E5%AD%97/" title="Java中synchronized关键字">
+                      <a href="/2023/06/05/Java%E4%B8%ADvolatile%E5%85%B3%E9%94%AE%E5%AD%97/" title="Java中volatile关键字">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Java中synchronized关键字</span>
+                        <span class="hidden-mobile">Java中volatile关键字</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -397,8 +357,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2023/05/29/java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A0%81AQS%E8%AF%A6%E8%A7%A3/" title="java并发编码AQS详解">
-                        <span class="hidden-mobile">java并发编码AQS详解</span>
+                      <a href="/2023/05/31/Redis-Cluster-Gossip%E5%8D%8F%E8%AE%AE/" title="Redis Cluster Gossip协议">
+                        <span class="hidden-mobile">Redis Cluster Gossip协议</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
