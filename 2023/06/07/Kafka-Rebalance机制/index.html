@@ -16,21 +16,24 @@
   <meta name="author" content="zhaozonglu">
   <meta name="keywords" content="">
   
-    <meta name="description" content="内存结构概述Java是一款面向对象的编程语言，我们日常工作中也会频繁的创建一个对象，创建的对象最终会放在内存中，那么一个对象在内存中到底长什么样子，由哪些部分组成？下面我们使用OpenJDK提供的工具JOL来解码对象在内存中的实际布局信息。 1234public static void main(String[] args) &amp;#123;    Object ob &#x3D; new Object();">
+    <meta name="description" content="Kafka Rebalance机制rebalance是再均衡的意思，我们首先要了解kafka消费者组的相关概念，消费者组中会有多个消费者，消费者组在消费一个topic或者多个topic的时候，kafka为了保证消息消费不重不漏，kafka将每个topic下的partition唯一性的分配给消费者组里的消费者。但是当消费者组中新增消费者，或者消费者组中的某个消费者宕机时，partition的分配就不">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java&#x2F;Java内存对象布局">
-<meta property="og:url" content="https://zhaozonglu.github.io/2023/06/05/Java-Java%E5%86%85%E5%AD%98%E5%AF%B9%E8%B1%A1%E5%B8%83%E5%B1%80/index.html">
+<meta property="og:title" content="Kafka Rebalance机制">
+<meta property="og:url" content="https://zhaozonglu.github.io/2023/06/07/Kafka-Rebalance%E6%9C%BA%E5%88%B6/index.html">
 <meta property="og:site_name" content="廿号玺园">
-<meta property="og:description" content="内存结构概述Java是一款面向对象的编程语言，我们日常工作中也会频繁的创建一个对象，创建的对象最终会放在内存中，那么一个对象在内存中到底长什么样子，由哪些部分组成？下面我们使用OpenJDK提供的工具JOL来解码对象在内存中的实际布局信息。 1234public static void main(String[] args) &amp;#123;    Object ob &#x3D; new Object();">
+<meta property="og:description" content="Kafka Rebalance机制rebalance是再均衡的意思，我们首先要了解kafka消费者组的相关概念，消费者组中会有多个消费者，消费者组在消费一个topic或者多个topic的时候，kafka为了保证消息消费不重不漏，kafka将每个topic下的partition唯一性的分配给消费者组里的消费者。但是当消费者组中新增消费者，或者消费者组中的某个消费者宕机时，partition的分配就不">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2023-06-05T06:15:45.000Z">
-<meta property="article:modified_time" content="2023-06-12T06:05:11.781Z">
+<meta property="article:published_time" content="2023-06-07T02:28:34.000Z">
+<meta property="article:modified_time" content="2023-06-07T07:31:56.635Z">
 <meta property="article:author" content="zhaozonglu">
+<meta property="article:tag" content="kafka">
+<meta property="article:tag" content="Rebalance机制">
+<meta property="article:tag" content="消费者组">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>Java/Java内存对象布局 - 廿号玺园</title>
+  <title>Kafka Rebalance机制 - 廿号玺园</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -196,7 +199,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Java/Java内存对象布局"></span>
+            <span id="subtitle" data-typed-text="Kafka Rebalance机制"></span>
           
         </div>
 
@@ -207,8 +210,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2023-06-05 14:15" pubdate>
-          2023年6月5日 下午
+        <time datetime="2023-06-07 10:28" pubdate>
+          2023年6月7日 上午
         </time>
       </span>
     
@@ -219,7 +222,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          599 字
+          716 字
         
       </span>
     
@@ -230,7 +233,7 @@
         
         
         
-          5 分钟
+          6 分钟
         
       </span>
     
@@ -268,19 +271,21 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Java/Java内存对象布局</h1>
+            <h1 style="display: none">Kafka Rebalance机制</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="内存结构概述"><a href="#内存结构概述" class="headerlink" title="内存结构概述"></a>内存结构概述</h1><p>Java是一款面向对象的编程语言，我们日常工作中也会频繁的创建一个对象，创建的对象最终会放在内存中，那么一个对象在内存中到底长什么样子，由哪些部分组成？<br>下面我们使用OpenJDK提供的工具JOL来解码对象在内存中的实际布局信息。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> &#123;<br>    <span class="hljs-type">Object</span> <span class="hljs-variable">ob</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Object</span>();<br>    System.out.println(ClassLayout.parseInstance(ob).toPrintable());<br>&#125;<br></code></pre></td></tr></table></figure>
-<p>运行程序输出结果如下：</p>
-<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs angelscript">java.lang.Object object <span class="hljs-built_in">int</span>ernals:<br>OFF  SZ   TYPE DESCRIPTION               VALUE<br>  <span class="hljs-number">0</span>   <span class="hljs-number">8</span>        (object header: mark)     <span class="hljs-number">0x0000000000000001</span> (non-biasable; age: <span class="hljs-number">0</span>)<br>  <span class="hljs-number">8</span>   <span class="hljs-number">4</span>        (object header: <span class="hljs-keyword">class</span>)    <span class="hljs-symbol">0x00000f28</span><br> <span class="hljs-symbol">12</span>   <span class="hljs-symbol">4</span>        (<span class="hljs-symbol">object</span> <span class="hljs-symbol">alignment</span> <span class="hljs-symbol">gap</span>)    <br><span class="hljs-symbol">Instance</span> <span class="hljs-symbol">size: <span class="hljs-symbol">16</span></span> <span class="hljs-symbol">bytes</span><br><span class="hljs-symbol">Space</span> <span class="hljs-symbol">losses: <span class="hljs-symbol">0</span></span> <span class="hljs-symbol">bytes</span> <span class="hljs-symbol">internal</span> + <span class="hljs-symbol">4</span> <span class="hljs-symbol">bytes</span> <span class="hljs-symbol">external</span> = <span class="hljs-symbol">4</span> <span class="hljs-symbol">bytes</span> <span class="hljs-symbol">total</span><br></code></pre></td></tr></table></figure>
-
-
-
-<h1 id="对象头"><a href="#对象头" class="headerlink" title="对象头"></a>对象头</h1><h1 id="对象填充"><a href="#对象填充" class="headerlink" title="对象填充"></a>对象填充</h1><h1 id="指针压缩"><a href="#指针压缩" class="headerlink" title="指针压缩"></a>指针压缩</h1><p>参考文档：<a target="_blank" rel="noopener" href="https://wilson-he.gitee.io/jvm/jol/">https://wilson-he.gitee.io/jvm/jol/</a><br><a target="_blank" rel="noopener" href="https://lanshiqin.com/548052d0/">https://lanshiqin.com/548052d0/</a></p>
+                <h1 id="Kafka-Rebalance机制"><a href="#Kafka-Rebalance机制" class="headerlink" title="Kafka Rebalance机制"></a>Kafka Rebalance机制</h1><p>rebalance是再均衡的意思，我们首先要了解kafka消费者组的相关概念，消费者组中会有多个消费者，消费者组在消费一个topic或者多个topic的时候，kafka为了保证消息消费不重不漏，kafka将每个topic下的partition唯一性的分配给消费者组里的消费者。但是当消费者组中新增消费者，或者消费者组中的某个消费者宕机时，partition的分配就不公平了或者会出现宕机的消费者负责的partition没有消费者处理，这个时候就需要kafka的rebalance机制来处理这种情况。</p>
+<h2 id="Rebalance产生的条件"><a href="#Rebalance产生的条件" class="headerlink" title="Rebalance产生的条件"></a>Rebalance产生的条件</h2><ol>
+<li>消费者组成员发生了变更，比如新的消费者加入或者消费者宕机</li>
+<li><font color=blue>消费者无法在指定时间之内完成消息的消费</font></li>
+<li>消费者组订阅的topic发生了变化</li>
+<li>订阅的topic的partition发生了变化</li>
+</ol>
+<h2 id="Rebalance流程"><a href="#Rebalance流程" class="headerlink" title="Rebalance流程"></a>Rebalance流程</h2><h2 id="Generation机制"><a href="#Generation机制" class="headerlink" title="Generation机制"></a>Generation机制</h2><h1 id="如何避免Rebalance"><a href="#如何避免Rebalance" class="headerlink" title="如何避免Rebalance"></a>如何避免Rebalance</h1><p>rebalance期间消费者是读取不了任何消息的，因为这段时间会对分区进行重新分配，所以之前消费者与分区之间的对应关系已经不存在，需要重新进行分配，会出现短暂的不可用现象。<br>如果是主动加入消费者或者撤掉消费者，这种时候发生rebalance是可以预见的，但是被动情况下产生的rebalance不可预见，我们应该尽量避免。</p>
+<h2 id="避免消费者超时导致的rebalance"><a href="#避免消费者超时导致的rebalance" class="headerlink" title="避免消费者超时导致的rebalance"></a>避免消费者超时导致的rebalance</h2><h2 id=""><a href="#" class="headerlink" title=""></a></h2><p>参考资料：<br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/108564156">https://zhuanlan.zhihu.com/p/108564156</a></p>
+<p><a target="_blank" rel="noopener" href="https://yhyr.github.io/2018/12/26/Kafka%E7%90%86%E8%AE%BA%E4%B9%8BConsumer-Group-Coordinator/">https://yhyr.github.io/2018/12/26/Kafka%E7%90%86%E8%AE%BA%E4%B9%8BConsumer-Group-Coordinator/</a></p>
 
                 
               </div>
@@ -290,6 +295,17 @@
               <div class="post-metas my-3">
   
   
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/kafka/">#kafka</a>
+      
+        <a href="/tags/Rebalance%E6%9C%BA%E5%88%B6/">#Rebalance机制</a>
+      
+        <a href="/tags/%E6%B6%88%E8%B4%B9%E8%80%85%E7%BB%84/">#消费者组</a>
+      
+    </div>
+  
 </div>
 
 
@@ -298,8 +314,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Java/Java内存对象布局</div>
-      <div>https://zhaozonglu.github.io/2023/06/05/Java-Java内存对象布局/</div>
+      <div>Kafka Rebalance机制</div>
+      <div>https://zhaozonglu.github.io/2023/06/07/Kafka-Rebalance机制/</div>
     </div>
     <div class="license-meta">
       
@@ -311,7 +327,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2023年6月5日</div>
+          <div>2023年6月7日</div>
         </div>
       
       
@@ -343,9 +359,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/" title="Kafka生产者架构分析">
+                      <a href="/2023/06/07/Kafka%E9%80%89%E4%B8%BE%E6%9C%BA%E5%88%B6/" title="Kafka选举机制">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Kafka生产者架构分析</span>
+                        <span class="hidden-mobile">Kafka选举机制</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -353,8 +369,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2023/06/05/Java%E4%B8%ADvolatile%E5%85%B3%E9%94%AE%E5%AD%97/" title="Java中volatile关键字">
-                        <span class="hidden-mobile">Java中volatile关键字</span>
+                      <a href="/2023/06/05/Kafka%E7%94%9F%E4%BA%A7%E8%80%85%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90/" title="Kafka生产者架构分析">
+                        <span class="hidden-mobile">Kafka生产者架构分析</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
