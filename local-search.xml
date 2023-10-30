@@ -4,6 +4,40 @@
   
   
   <entry>
+    <title>Java逃逸分析的理解</title>
+    <link href="/2023/10/27/Java%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E7%9A%84%E7%90%86%E8%A7%A3/"/>
+    <url>/2023/10/27/Java%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E7%9A%84%E7%90%86%E8%A7%A3/</url>
+    
+    <content type="html"><![CDATA[<p>我们首先要对java的编译原理有个简单的了解，在java的编译原理中，一个<code>.java的</code>源代码文件变成可执行的机器指令需要经过两段编译，先把<code>.java</code>文件编译成<code>.class</code>文件，该过程称为<strong>前端编译</strong>，然后把<code>.class</code>文件翻译成机器指令，该过程称为<strong>后端编译</strong>。</p><img src="/2023/10/27/Java%E9%80%83%E9%80%B8%E5%88%86%E6%9E%90%E7%9A%84%E7%90%86%E8%A7%A3/java%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B.png" class="" title="kafka生产者架构图"><p>第一段编译就是<code>javac</code>命令。</p><p>第二段编译为了优化编译效率，JVM引入JIT（即时编译）技术。<br>引入了 JIT 技术后，Java程序还是通过解释器进行解释执行，当JVM发现某个方法或代码块运行特别频繁的时候，就会认为这是“热点代码”（Hot Spot Code)。然后JIT会把部分“热点代码”翻译成本地机器相关的机器码，并进行优化，然后再把翻译后的机器码缓存起来，以备下次使用。</p><p>在JIT优化中，有几个比较重要的优化技术，如：逃逸分析、 锁消除、 锁膨胀、 方法内联、 空值检查消除、 类型检测消除、 公共子表达式消除。</p><p>本文着重介绍<strong>逃逸分析</strong></p><h1 id="什么是逃逸分析"><a href="#什么是逃逸分析" class="headerlink" title="什么是逃逸分析"></a>什么是逃逸分析</h1><p>逃逸分析的基本行为是分析对象动态作用域，当一个对象在方法中被定义后，它可能被外部方法所引用，例如作为调用参数传递到其他地方中，称为方法逃逸。<br>例如代码如下：</p><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs typescript"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-title class_">StringBuffer</span> <span class="hljs-title function_">craeteStringBuffer</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> s1, <span class="hljs-built_in">String</span> s2</span>) &#123;<br>    <span class="hljs-title class_">StringBuffer</span> sb = <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuffer</span>();<br>    sb.<span class="hljs-title function_">append</span>(s1);<br>    sb.<span class="hljs-title function_">append</span>(s2);<br>    <span class="hljs-keyword">return</span> sb;<br>&#125;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-title class_">String</span> <span class="hljs-title function_">createStringBuffer</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> s1, <span class="hljs-built_in">String</span> s2</span>) &#123;<br>    <span class="hljs-title class_">StringBuffer</span> sb = <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuffer</span>();<br>    sb.<span class="hljs-title function_">append</span>(s1);<br>    sb.<span class="hljs-title function_">append</span>(s2);<br>    <span class="hljs-keyword">return</span> sb.<span class="hljs-title function_">toString</span>();<br>&#125;<br></code></pre></td></tr></table></figure><p>第一段代码中的<code>sb</code>就逃逸了，而第二段代码中的<code>sb</code>就没有逃逸。</p><p>在Java代码运行时，通过JVM参数可指定是否开启逃逸分析，<br><code>-XX:+DoEscapeAnalysis</code> ： 表示开启逃逸分析<br><code>-XX:-DoEscapeAnalysis</code> ： 表示关闭逃逸分析 </p><p>从jdk 1.7开始已经默认开始逃逸分析，如需关闭，需要指定-XX:-DoEscapeAnalysis</p><h1 id="对象逃逸状态"><a href="#对象逃逸状态" class="headerlink" title="对象逃逸状态"></a>对象逃逸状态</h1><p>逃逸分析之后, 可以得到三种对象的逃逸状态:</p><ol><li>全局逃逸(GlobalEscape): 一个对象的引用逃出了方法或者线程. 比如一个对象的引用赋值给了一个类变量, 或者存储在一个已经逃逸的对象中, 或者这个对象的引用作为方法的返回值给了调用方法。</li><li>参数逃逸(ArgEscape): 方法调用过程中传递对象的方法给调用方. 这种状态可以通过被调方法的二进制码确定。</li><li>没有逃逸(NoEscape): 一个可以进行标量替换的对象, 可以不将对象分配在传统的堆上。</li></ol><h1 id="逃逸分析优化"><a href="#逃逸分析优化" class="headerlink" title="逃逸分析优化"></a>逃逸分析优化</h1><p>使用逃逸分析，编译器可以对代码做如下优化：</p><ol><li>同步省略。如果一个对象被发现只能从一个线程被访问到，那么对于这个对象的操作可以不考虑同步。</li><li>将堆分配转化为栈分配。如果一个对象在子程序中被分配，要使指向该对象的指针永远不会逃逸，对象可能是栈分配的候选，而不是堆分配。</li><li>分离对象或标量替换。有的对象可能不需要作为一个连续的内存结构存在也可以被访问到，那么对象的部分（或全部）可以不存储在内存，而是存储在CPU寄存器中。</li></ol>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>方法逃逸</tag>
+      
+      <tag>线程逃逸</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Mysql锁详解</title>
+    <link href="/2023/10/24/Mysql%E9%94%81%E8%AF%A6%E8%A7%A3/"/>
+    <url>/2023/10/24/Mysql%E9%94%81%E8%AF%A6%E8%A7%A3/</url>
+    
+    <content type="html"><![CDATA[]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Eureka发布流程和平滑发布思考</title>
     <link href="/2023/10/12/Eureka%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B%E5%92%8C%E5%B9%B3%E6%BB%91%E5%8F%91%E5%B8%83%E6%80%9D%E8%80%83/"/>
     <url>/2023/10/12/Eureka%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B%E5%92%8C%E5%B9%B3%E6%BB%91%E5%8F%91%E5%B8%83%E6%80%9D%E8%80%83/</url>
